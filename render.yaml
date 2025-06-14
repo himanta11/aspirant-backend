@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: aspirant-backend
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: "aspirant-db"
+      - key: TOGETHER_API_KEY
+        value: "your_together_api_key_here"
+      - key: SECRET_KEY
+        value: "your_secret_key_here"
+      - key: ALGORITHM
+        value: "HS256"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+    
+  - type: database
+    name: aspirant-db
+    databaseName: aspirant_db
+    databaseType: POSTGRESQL
+    env:
+      - key: POSTGRESQL_DATABASE
+        value: aspirant_db
+      - key: POSTGRESQL_USER
+        value: admin
+      - key: POSTGRESQL_PASSWORD
+        value: "your_password_here"
+      - key: POSTGRESQL_VERSION
+        value: "14"

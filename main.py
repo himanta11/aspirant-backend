@@ -18,21 +18,86 @@ import os
 import json
 from sqlalchemy import text
 import requests
-from together import Together
 from dotenv import load_dotenv
 import time
+import requests
 
 # Load environment variables
 load_dotenv()
 
-# Initialize Together AI client with hardcoded API key
-TOGETHER_API_KEY = "39b58efc9f06bc95aeb6a246badf5561100d6247136a4cd33bc6f2c96cc9d6bf"
-TOGETHER_API_URL = "https://api.together.xyz/v1/completions"
-together_client = Together(api_key=TOGETHER_API_KEY)
+# Configuration
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY", "")
+TOGETHER_API_URL = os.getenv("TOGETHER_API_URL", "https://api.together.xyz/v1/completions")
+
+# Initialize app with proper configuration
+app = FastAPI(
+    title="Aspirant Backend API",
+    description="Backend API for Aspirant application",
+    version="1.0.0"
+)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Database configuration
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+logger.info("Application initialized with configuration:")
+logger.info(f"Database URL: {SQLALCHEMY_DATABASE_URL}")
+logger.info(f"API Key configured: {bool(TOGETHER_API_KEY)}")
+
+class TogetherClient:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+
+    async def generate(self, prompt, model="togethercomputer/llama-2-70b-chat", **kwargs):
+        data = {
+            "prompt": prompt,
+            "model": model,
+            "max_tokens": 100,
+            "temperature": 0.7,
+            **kwargs
+        }
+        
+        try:
+            response = await requests.post(
+                TOGETHER_API_URL,
+                headers=self.headers,
+                json=data
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error calling Together API: {str(e)}")
+            raise
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.info("Together AI client initialized")
+
+together_client = TogetherClient(api_key=TOGETHER_API_KEY)
 
 # Chat request/response models
 class Message(BaseModel):
@@ -52,6 +117,9 @@ class ChatResponse(BaseModel):
 try:
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully")
+    logger.info("Starting FastAPI server...")
+    logger.info("Server started successfully")
+    logger.info("Together AI client initialized")
 except Exception as e:
     logger.error(f"Error creating database tables: {str(e)}")
     logger.error(traceback.format_exc())

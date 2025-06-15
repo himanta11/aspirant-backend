@@ -49,7 +49,7 @@ app.add_middleware(
 )
 
 # Database configuration
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+SQLALCHEMY_DATABASE_URL = "postgresql://aspirant_db_user:JsbVZ03lsBmR272ZKGkhow9PvvcnNmHu@dpg-d16srsemcj7s73cibjig-a/aspirant_db"
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -71,7 +71,7 @@ class TogetherClient:
             'Content-Type': 'application/json'
         }
 
-    async def generate(self, prompt, model="togethercomputer/llama-2-70b-chat", **kwargs):
+    def generate(self, prompt, model="togethercomputer/llama-2-70b-chat", **kwargs):
         data = {
             "prompt": prompt,
             "model": model,
@@ -81,7 +81,7 @@ class TogetherClient:
         }
         
         try:
-            response = await requests.post(
+            response = requests.post(
                 TOGETHER_API_URL,
                 headers=self.headers,
                 json=data

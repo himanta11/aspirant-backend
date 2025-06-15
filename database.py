@@ -10,9 +10,12 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 try:
-    # Hardcoded database URL
-    DATABASE_URL = "postgresql://postgres:Adhar%405221@localhost:5432/mydatabase"
-    logger.info(f"Database URL configured")
+    # Get database URL from environment variable
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable is not set")
+    
+    logger.info(f"Database URL configured: {DATABASE_URL}")
 
     engine = create_engine(DATABASE_URL)
     logger.info("Database engine created")
